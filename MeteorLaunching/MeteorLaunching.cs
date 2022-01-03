@@ -1,0 +1,63 @@
+using OWML.ModHelper;
+using OWML.Common;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace MeteorLaunching
+{
+    public class MeteorLaunching : ModBehaviour
+    {
+        PlayerBody playerBody;
+        GameObject meteor;
+        SimpleFluidVolume sunFluid;
+        protected OWAudioSource audio;
+        public float launchSpeed = 1000;
+
+        private void Start()
+        {
+            LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>
+            {
+                if (loadScene != OWScene.SolarSystem) return;
+                playerBody = FindObjectOfType<PlayerBody>();
+                meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
+                sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
+                audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
+            };
+        }
+
+        private void Update()
+        {
+            if (Mouse.current.middleButton.wasPressedThisFrame)
+            {
+                OWCamera camera = Locator.GetActiveCamera();
+                GameObject newMeteor = Instantiate(meteor, playerBody.GetPosition() + camera.transform.forward * 20, camera.transform.rotation);
+                newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + camera.transform.forward * launchSpeed;
+                newMeteor.name = "pew pew KABOOM";
+
+                FluidVolume closeFluid = sunFluid;
+                var fluids = FindObjectsOfType<SimpleFluidVolume>();
+                foreach (var fluid in fluids)
+                {
+                    float distance = Vector3.Distance(playerBody.GetPosition(), fluid.transform.position);
+                    if (distance < 1000 && fluid._allowShipAutoroll && distance < Vector3.Distance(playerBody.GetPosition(), closeFluid.transform.position))
+                    {
+                        closeFluid = fluid;
+                    }
+                }
+                //ModHelper.Console.WriteLine($"" + closeFluid);
+
+                newMeteor.transform.Find("ConstantDetectors").GetComponent<ConstantFluidDetector>()._onlyDetectableFluid = closeFluid;
+                MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
+                newMeteorContr._heat = 1;
+                newMeteorContr._hasLaunched = true;
+                newMeteorContr._suspendRoot = playerBody.transform;
+                audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
+            }
+        }
+
+        public override void Configure(IModConfig config)
+        {
+            this.launchSpeed = config.GetSettingsValue<float>("Meteor Launch Speed");
+        }
+    }
+}
