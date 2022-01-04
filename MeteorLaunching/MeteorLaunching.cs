@@ -8,10 +8,12 @@ namespace MeteorLaunching
     public class MeteorLaunching : ModBehaviour
     {
         PlayerBody playerBody;
+        Transform launcher;
         GameObject meteor;
         SimpleFluidVolume sunFluid;
         protected OWAudioSource audio;
         public float launchSpeed = 1000;
+        public bool useOWInput = false;
 
         private void Start()
         {
@@ -19,6 +21,7 @@ namespace MeteorLaunching
             {
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
+                launcher = FindObjectOfType<FirstPersonManipulator>().transform;
                 meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
@@ -27,11 +30,10 @@ namespace MeteorLaunching
 
         private void Update()
         {
-            if (Mouse.current.middleButton.wasPressedThisFrame)
+            if (Mouse.current.middleButton.wasPressedThisFrame || (useOWInput && OWInput.IsNewlyPressed(InputLibrary.cancel) && OWInput.IsInputMode(InputMode.Character) && (Locator.GetToolModeSwapper().IsInToolMode(ToolMode.None) || Locator.GetToolModeSwapper().IsInToolMode(ToolMode.Item))))
             {
-                OWCamera camera = Locator.GetActiveCamera();
-                GameObject newMeteor = Instantiate(meteor, playerBody.GetPosition() + camera.transform.forward * 20, camera.transform.rotation);
-                newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + camera.transform.forward * launchSpeed;
+                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * 20, launcher.rotation);
+                newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
                 newMeteor.name = "pew pew KABOOM";
 
                 FluidVolume closeFluid = sunFluid;
@@ -45,7 +47,7 @@ namespace MeteorLaunching
                     }
                 }
                 //ModHelper.Console.WriteLine($"" + closeFluid);
-
+                
                 newMeteor.transform.Find("ConstantDetectors").GetComponent<ConstantFluidDetector>()._onlyDetectableFluid = closeFluid;
                 MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
                 newMeteorContr._heat = 1;
@@ -58,6 +60,7 @@ namespace MeteorLaunching
         public override void Configure(IModConfig config)
         {
             this.launchSpeed = config.GetSettingsValue<float>("Meteor Launch Speed");
+            this.useOWInput = config.GetSettingsValue<bool>("Use back button");
         }
     }
 }
