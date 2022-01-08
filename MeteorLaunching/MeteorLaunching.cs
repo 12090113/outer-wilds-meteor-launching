@@ -13,6 +13,7 @@ namespace MeteorLaunching
         SimpleFluidVolume sunFluid;
         protected OWAudioSource audio;
         public float launchSpeed = 1000;
+        public float launchSize = 1;
         public bool useOWInput = false;
 
         private void Start()
@@ -32,8 +33,9 @@ namespace MeteorLaunching
         {
             if (Mouse.current.middleButton.wasPressedThisFrame || (useOWInput && OWInput.IsNewlyPressed(InputLibrary.cancel) && OWInput.IsInputMode(InputMode.Character) && (Locator.GetToolModeSwapper().IsInToolMode(ToolMode.None) || Locator.GetToolModeSwapper().IsInToolMode(ToolMode.Item))))
             {
-                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * 20, launcher.rotation);
+                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize*20, launcher.rotation);
                 newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
+                newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
 
                 FluidVolume closeFluid = sunFluid;
@@ -59,8 +61,9 @@ namespace MeteorLaunching
 
         public override void Configure(IModConfig config)
         {
-            this.launchSpeed = config.GetSettingsValue<float>("Meteor Launch Speed");
             this.useOWInput = config.GetSettingsValue<bool>("Use back button");
+            this.launchSpeed = config.GetSettingsValue<float>("Meteor Launch Speed");
+            this.launchSize = config.GetSettingsValue<float>("Meteor Launch Size");
         }
     }
 }

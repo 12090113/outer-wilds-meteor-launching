@@ -1,7 +1,8 @@
 {
 	"enabled": true,
 	"settings": {
+		"Use back button": false,
 		"Meteor Launch Speed": 1000.0,
-		"Use back button": false
+		"Meteor Launch Size": 1
 	}
 }
