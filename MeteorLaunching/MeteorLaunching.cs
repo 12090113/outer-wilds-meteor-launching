@@ -26,14 +26,16 @@ namespace MeteorLaunching
                 meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
+                //ModHelper.Console.WriteLine($"launcher: " + launcher);
             };
         }
 
         private void Update()
         {
-            if (Mouse.current.middleButton.wasPressedThisFrame || (useOWInput && OWInput.IsNewlyPressed(InputLibrary.cancel) && OWInput.IsInputMode(InputMode.Character) && (Locator.GetToolModeSwapper().IsInToolMode(ToolMode.None) || Locator.GetToolModeSwapper().IsInToolMode(ToolMode.Item))))
+            if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
                 GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize*20, launcher.rotation);
+                //ModHelper.Console.WriteLine($"rotation: " + newMeteor.transform.rotation);
                 newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
                 newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
@@ -57,6 +59,11 @@ namespace MeteorLaunching
                 newMeteorContr._suspendRoot = playerBody.transform;
                 audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
             }
+        }
+
+        private bool BackPressed()
+        {
+            return useOWInput && OWInput.IsNewlyPressed(InputLibrary.cancel) && OWInput.IsInputMode(InputMode.Character) && (Locator.GetToolModeSwapper().IsInToolMode(ToolMode.None) || Locator.GetToolModeSwapper().IsInToolMode(ToolMode.Item));
         }
 
         public override void Configure(IModConfig config)
