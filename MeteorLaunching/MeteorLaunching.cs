@@ -2,6 +2,7 @@ using OWML.ModHelper;
 using OWML.Common;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 namespace MeteorLaunching
 {
@@ -22,12 +23,17 @@ namespace MeteorLaunching
             {
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
-                launcher = FindObjectOfType<FirstPersonManipulator>().transform;
                 meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
-                //ModHelper.Console.WriteLine($"launcher: " + launcher);
+                StartCoroutine(SetLauncher());
             };
+        }
+
+        private IEnumerator SetLauncher()
+        {
+            yield return new WaitForEndOfFrame();
+            launcher = FindObjectOfType<FirstPersonManipulator>().transform;
         }
 
         private void Update()
@@ -35,7 +41,6 @@ namespace MeteorLaunching
             if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
                 GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize*20, launcher.rotation);
-                //ModHelper.Console.WriteLine($"rotation: " + newMeteor.transform.rotation);
                 newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
                 newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
