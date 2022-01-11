@@ -23,7 +23,7 @@ namespace MeteorLaunching
             {
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
-                meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
+                meteor = GameObject.Find("Player_Body/RoastingSystem").GetComponent<RoastingStickController>()._mallowBodyPrefab; //GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
                 StartCoroutine(SetLauncher());
@@ -40,11 +40,25 @@ namespace MeteorLaunching
         {
             if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
-                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize*20, launcher.rotation);
-                newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
-                newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
+                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize * 0.1f, launcher.rotation);
+                /*GameObject newMeteor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                newMeteor.transform.position = launcher.position + launcher.forward * launchSize * 2;
+                newMeteor.transform.rotation = launcher.rotation;
+                var owrigid = newMeteor.AddComponent<OWRigidbody>();
+                //newMeteor.AddComponent<CenterOfTheUniverseOffsetApplier>();
+                GameObject Detector = new GameObject("Detector");
+                Detector.transform.SetParent(newMeteor.transform);
+                var force = Detector.AddComponent<DynamicForceDetector>();
+                var fluid = Detector.AddComponent<DynamicFluidDetector>();
+                owrigid._attachedForceDetector = force;
+                owrigid._attachedFluidDetector = fluid;*/
+                Destroy(newMeteor.GetComponent<SelfDestruct>());
+                newMeteor.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
+                
+                newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
+                newMeteor.transform.localScale = new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
-
+                /*
                 FluidVolume closeFluid = sunFluid;
                 var fluids = FindObjectsOfType<SimpleFluidVolume>();
                 foreach (var fluid in fluids)
@@ -61,7 +75,7 @@ namespace MeteorLaunching
                 MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
                 newMeteorContr._heat = 1;
                 newMeteorContr._hasLaunched = true;
-                newMeteorContr._suspendRoot = playerBody.transform;
+                newMeteorContr._suspendRoot = playerBody.transform;*/
                 audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
             }
         }
