@@ -40,7 +40,7 @@ namespace MeteorLaunching
         {
             if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
-                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize * 0.1f, launcher.rotation);
+                GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize * meteor.GetComponentInChildren<MeshRenderer>().bounds.size.x, launcher.rotation);
                 /*GameObject newMeteor = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 newMeteor.transform.position = launcher.position + launcher.forward * launchSize * 2;
                 newMeteor.transform.rotation = launcher.rotation;
