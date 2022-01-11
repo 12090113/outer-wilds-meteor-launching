@@ -41,7 +41,7 @@ namespace MeteorLaunching
             if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
                 GameObject newMeteor = Instantiate(meteor, launcher.position + launcher.forward * launchSize*20, launcher.rotation);
-                newMeteor.GetComponent<Rigidbody>().velocity = playerBody.GetVelocity() + launcher.forward * launchSpeed;
+                newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
                 newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
 
