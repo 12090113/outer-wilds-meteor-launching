@@ -11,6 +11,7 @@ namespace MeteorLaunching
         PlayerBody playerBody;
         Transform launcher;
         GameObject meteor;
+        GameObject marshmallow;
         SimpleFluidVolume sunFluid;
         protected OWAudioSource audio;
         public float launchSpeed = 1000;
@@ -24,6 +25,7 @@ namespace MeteorLaunching
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
                 meteor = GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab;
+                marshmallow = GameObject.Find("Player_Body/RoastingSystem").GetComponent<RoastingStickController>()._mallowBodyPrefab;
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
                 StartCoroutine(SetLauncher());
@@ -44,7 +46,7 @@ namespace MeteorLaunching
                 newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
                 newMeteor.transform.localScale =  new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "pew pew KABOOM";
-
+                /*
                 FluidVolume closeFluid = sunFluid;
                 var fluids = FindObjectsOfType<SimpleFluidVolume>();
                 foreach (var fluid in fluids)
@@ -54,14 +56,29 @@ namespace MeteorLaunching
                     {
                         closeFluid = fluid;
                     }
-                }
+                }*/
                 //ModHelper.Console.WriteLine($"" + closeFluid);
-                
-                newMeteor.transform.Find("ConstantDetectors").GetComponent<ConstantFluidDetector>()._onlyDetectableFluid = closeFluid;
+
+                var Detectors = newMeteor.transform.Find("ConstantDetectors");
+                Destroy(Detectors.GetComponent<ConstantFluidDetector>());
+                Destroy(Detectors.GetComponent<ConstantForceDetector>());
+                Detectors.gameObject.AddComponent<DynamicFluidDetector>();
+                Detectors.gameObject.AddComponent<DynamicForceDetector>()._dirty = true;
                 MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
                 newMeteorContr._heat = 1;
                 newMeteorContr._hasLaunched = true;
                 newMeteorContr._suspendRoot = playerBody.transform;
+                audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
+            }
+            else if (Keyboard.current.mKey.wasPressedThisFrame)
+            {
+                GameObject newMeteor = Instantiate(marshmallow, launcher.position + launcher.forward * launchSize * marshmallow.GetComponentInChildren<MeshRenderer>().bounds.size.x, launcher.rotation);
+                Destroy(newMeteor.GetComponent<SelfDestruct>());
+                newMeteor.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
+
+                newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
+                newMeteor.transform.localScale = new Vector3(launchSize, launchSize, launchSize);
+                newMeteor.name = "pew pew KABOOM";
                 audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
             }
         }
