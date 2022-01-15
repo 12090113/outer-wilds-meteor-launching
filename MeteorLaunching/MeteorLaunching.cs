@@ -42,7 +42,15 @@ namespace MeteorLaunching
 
         private void Update()
         {
-            if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
+
+            if ((OWInput.IsPressed(InputLibrary.rollMode) && BackPressed()) || Keyboard.current.lKey.wasPressedThisFrame)
+            {
+                p++;
+                if (p >= projectiles.Length)
+                    p = 0;
+                ModHelper.Console.WriteLine($"" + projectiles[p]);
+            }
+            else if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
                 GameObject newMeteor = Instantiate(projectiles[p], launcher.position + launcher.forward * .5f + launcher.forward * launchSize * projectiles[p].GetComponentInChildren<MeshRenderer>().bounds.size.x * .5f, launcher.rotation);
                 /*GameObject newMeteor = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -84,13 +92,6 @@ namespace MeteorLaunching
                     newMeteorContr._suspendRoot = playerBody.transform;
                 }
                 audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
-            }
-            if (Keyboard.current.lKey.wasPressedThisFrame || (OWInput.IsNewlyPressed(InputLibrary.rollMode) && BackPressed()))
-            {
-                p++;
-                if (p > projectiles.Length)
-                    p = 0;
-                ModHelper.Console.WriteLine($"" + projectiles[p]);
             }
         }
 
