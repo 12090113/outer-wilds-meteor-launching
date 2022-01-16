@@ -3,6 +3,7 @@ using OWML.Common;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using UnityEngine.UI;
 
 namespace MeteorLaunching
 {
@@ -14,9 +15,11 @@ namespace MeteorLaunching
         int p = 0;
         SimpleFluidVolume sunFluid;
         protected OWAudioSource audio;
+        Text text;
         public float launchSpeed = 1000;
         public float launchSize = 1;
         public bool useOWInput = false;
+        private int timer = -1;
 
         private void Start()
         {
@@ -28,27 +31,37 @@ namespace MeteorLaunching
                     GameObject.Find("VolcanicMoon_Body/Sector_VM/Effects_VM/VolcanoPivot/MeteorLauncher").GetComponent<MeteorLauncher>()._meteorPrefab,
                     GameObject.Find("Player_Body/RoastingSystem").GetComponent<RoastingStickController>()._mallowBodyPrefab
                 };
+                projectiles[0].name = "Meteor";
+                projectiles[1].name = "Marshmallow";
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
-                StartCoroutine(SetLauncher());
+                text = Instantiate(GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout/GravityText"), GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout").transform).GetComponent<Text>();
+                
+                StartCoroutine(LateInitialize());
             };
         }
 
-        private IEnumerator SetLauncher()
+        private IEnumerator LateInitialize()
         {
             yield return new WaitForEndOfFrame();
             launcher = FindObjectOfType<FirstPersonManipulator>().transform;
+            if (useOWInput)
+                text.text = "Press L or Roll + Back\nto switch projectiles"; //"Selected Projectile:\n" + projectiles[p].name;
+            else
+                text.text = "Press L\nto switch projectiles";
+            text.transform.localPosition = new Vector3(-150, 290, 0);
         }
 
         private void Update()
         {
-
             if ((OWInput.IsPressed(InputLibrary.rollMode) && BackPressed()) || Keyboard.current.lKey.wasPressedThisFrame)
             {
                 p++;
                 if (p >= projectiles.Length)
                     p = 0;
-                ModHelper.Console.WriteLine($"" + projectiles[p]);
+                text.text = "Selected Projectile:\n" + projectiles[p].name;
+                audio.PlayOneShot(AudioType.Menu_ChangeTab);
+                timer = 100;
             }
             else if (BackPressed() || Mouse.current.middleButton.wasPressedThisFrame)
             {
@@ -67,13 +80,7 @@ namespace MeteorLaunching
                 newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
                 newMeteor.transform.localScale = new Vector3(launchSize, launchSize, launchSize);
                 newMeteor.name = "Projectile";
-                if (p == 1)
-                {
-                    Destroy(newMeteor.GetComponent<SelfDestruct>());
-                    newMeteor.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
-                }
-                
-                else if (p == 0) {
+                if (p == 0) {
                     FluidVolume closeFluid = sunFluid;
                     var fluids = FindObjectsOfType<SimpleFluidVolume>();
                     foreach (var fluid in fluids)
@@ -91,7 +98,24 @@ namespace MeteorLaunching
                     newMeteorContr._hasLaunched = true;
                     newMeteorContr._suspendRoot = playerBody.transform;
                 }
+                else if (p == 1)
+                {
+                    Destroy(newMeteor.GetComponent<SelfDestruct>());
+                    newMeteor.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
+                }
                 audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
+            }
+        }
+
+        void FixedUpdate()
+        {
+            if (timer == 0)
+            {
+                text.text = "";
+            }
+            if (timer >= 0)
+            {
+                timer--;
             }
         }
 
