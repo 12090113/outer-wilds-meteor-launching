@@ -2,8 +2,11 @@ using OWML.ModHelper;
 using OWML.Common;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections;
+using UnityEngine.Events;
 using UnityEngine.UI;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MeteorLaunching
 {
@@ -23,6 +26,15 @@ namespace MeteorLaunching
         public float launchSize = 1;
         public bool useOWInput = false;
         public int timer = -1;
+        public bool initializedProjectiles = false;
+
+        public class ProjectilesInitializeEvent : UnityEvent { }
+        public class ProjectileSwitchEvent : UnityEvent<int> { }
+        public class ProjectileLaunchEvent : UnityEvent<int, GameObject> { }
+
+        public ProjectilesInitializeEvent OnProjectilesInitialized;
+        public ProjectileSwitchEvent OnProjectileSwitched;
+        public ProjectileLaunchEvent OnProjectileLaunched;
 
         private void Awake()
         {
@@ -31,8 +43,12 @@ namespace MeteorLaunching
 
         private void Start()
         {
+            OnProjectilesInitialized = new ProjectilesInitializeEvent();
+            OnProjectileSwitched = new ProjectileSwitchEvent();
+            OnProjectileLaunched = new ProjectileLaunchEvent();
             LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>
             {
+                initializedProjectiles = false;
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
                 projectiles = new GameObject[] {
@@ -41,6 +57,8 @@ namespace MeteorLaunching
                 };
                 projectiles[0].name = "Meteor";
                 projectiles[1].name = "Marshmallow";
+                initializedProjectiles = true;
+                OnProjectilesInitialized?.Invoke();
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
                 text = Instantiate(GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout/GravityText"), GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout").transform).GetComponent<Text>();
@@ -78,53 +96,61 @@ namespace MeteorLaunching
             newMeteor.transform.localScale = new Vector3(launchSize, launchSize, launchSize);
             newMeteor.name = "Projectile";
             if (p == 0)
-            {
-                FluidVolume closeFluid = sunFluid;
-                var fluids = FindObjectsOfType<SimpleFluidVolume>();
-                foreach (var fluid in fluids)
-                {
-                    float distance = Vector3.Distance(playerBody.GetPosition(), fluid.transform.position);
-                    if (distance < 1000 && fluid._allowShipAutoroll && distance < Vector3.Distance(playerBody.GetPosition(), closeFluid.transform.position))
-                    {
-                        closeFluid = fluid;
-                    }
-                }
-                //ModHelper.Console.WriteLine($"" + closeFluid);
-                newMeteor.transform.Find("ConstantDetectors").GetComponent<ConstantFluidDetector>()._onlyDetectableFluid = closeFluid;
-                MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
-                newMeteorContr._heat = 1;
-                newMeteorContr._hasLaunched = true;
-                newMeteorContr._suspendRoot = playerBody.transform;
-            }
+                OnMeteorLaunched(newMeteor);
             else if (p == 1)
-            {
-                newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * (launchSpeed / 4);
-                Destroy(newMeteor.GetComponent<SelfDestruct>());
-                newMeteor.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
-            }
+                OnMarshmellowLaunched(newMeteor);
+            OnProjectileLaunched?.Invoke(p, newMeteor);
             audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
             return newMeteor;
+        }
+
+        private void OnMeteorLaunched(GameObject newMeteor)
+        {
+            FluidVolume closeFluid = sunFluid;
+            var fluids = FindObjectsOfType<SimpleFluidVolume>();
+            foreach (var fluid in fluids)
+            {
+                float distance = Vector3.Distance(playerBody.GetPosition(), fluid.transform.position);
+                if (distance < 1000 && fluid._allowShipAutoroll && distance < Vector3.Distance(playerBody.GetPosition(), closeFluid.transform.position))
+                {
+                    closeFluid = fluid;
+                }
+            }
+            //ModHelper.Console.WriteLine($"" + closeFluid);
+            newMeteor.transform.Find("ConstantDetectors").GetComponent<ConstantFluidDetector>()._onlyDetectableFluid = closeFluid;
+            MeteorController newMeteorContr = newMeteor.GetComponent<MeteorController>();
+            newMeteorContr._heat = 1;
+            newMeteorContr._hasLaunched = true;
+            newMeteorContr._suspendRoot = playerBody.transform;
+        }
+
+        private void OnMarshmellowLaunched(GameObject marshmellow)
+        {
+            marshmellow.GetComponent<Rigidbody>().velocity = launcher.forward * (launchSpeed / 4);
+            Destroy(marshmellow.GetComponent<SelfDestruct>());
+            marshmellow.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
         }
 
         private void SwitchProjectile()
         {
             p++;
-            OnProjectileSwitched();
+            ProjectileSwitched();
         }
 
         private void SwitchToProjectile(int index)
         {
             p = index;
-            OnProjectileSwitched();
+            ProjectileSwitched();
         }
 
-        private void OnProjectileSwitched()
+        private void ProjectileSwitched()
         {
             if (p >= projectiles.Length)
                 p = 0;
             text.text = "Selected Projectile:\n" + projectiles[p].name;
             audio.PlayOneShot(AudioType.Menu_ChangeTab);
             timer = 100;
+            OnProjectileSwitched?.Invoke(p);
         }
 
         private void Update()
@@ -157,6 +183,43 @@ namespace MeteorLaunching
             this.useOWInput = config.GetSettingsValue<bool>("Use back button");
             this.launchSpeed = config.GetSettingsValue<float>("Meteor Launch Speed");
             this.launchSize = config.GetSettingsValue<float>("Meteor Launch Size");
+        }
+            
+        public override object GetApi() => new Api();
+
+        public class Api
+        {
+            public GameObject[] GetProjectiles() => Instance.projectiles;
+
+            public void AddProjectile(GameObject projectile)
+            {
+                List<GameObject> projectiles = Instance.projectiles.ToList();
+                projectiles.Add(projectile);
+                Instance.projectiles = projectiles.ToArray();
+            }
+
+            public bool IsProjectilesInitialized() => Instance.initializedProjectiles;
+
+            public int GetSelectedProjectileIndex() => Instance.p;
+
+            public void SwitchProjectile() => Instance.SwitchProjectile();
+
+            public void SwitchToProjectile(int index) => Instance.SwitchToProjectile(index);
+
+            public UnityEvent GetProjectilesInitializedEvent()
+            {
+                return Instance.OnProjectilesInitialized;
+            }
+
+            public UnityEvent<int, GameObject> GetProjectileLaunchedEvent()
+            {
+                return Instance.OnProjectileLaunched;
+            }
+
+            public UnityEvent<int> GetProjectileSwitchedEvent()
+            {
+                return Instance.OnProjectileSwitched;
+            }
         }
     }
 }
