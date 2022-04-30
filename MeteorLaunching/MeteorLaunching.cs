@@ -26,6 +26,8 @@ namespace MeteorLaunching
         public float launchSize = 1;
         public bool useOWInput = false;
         public int timer = -1;
+        public bool initialized = false;
+        public bool lateInitialized = false;
         public bool initializedProjectiles = false;
 
         public class ProjectilesInitializeEvent : UnityEvent { }
@@ -48,6 +50,8 @@ namespace MeteorLaunching
             OnProjectileLaunched = new ProjectileLaunchEvent();
             LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>
             {
+                initialized = false;
+                lateInitialized = false;
                 initializedProjectiles = false;
                 if (loadScene != OWScene.SolarSystem) return;
                 playerBody = FindObjectOfType<PlayerBody>();
@@ -62,7 +66,7 @@ namespace MeteorLaunching
                 sunFluid = GameObject.Find("Sun_Body/Sector_SUN/Volumes_SUN/ScaledVolumesRoot/DestructionFluidVolume").GetComponent<SimpleFluidVolume>();
                 audio = GameObject.Find("Player_Body/Audio_Player/OneShotAudio_Player").GetComponent<OWAudioSource>();
                 text = Instantiate(GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout/GravityText"), GameObject.Find("PlayerHUD/HelmetOnUI/UICanvas/SecondaryGroup/GForce/NumericalReadout").transform).GetComponent<Text>();
-                
+                initialized = true;
                 StartCoroutine(LateInitialize());
             };
         }
@@ -76,10 +80,16 @@ namespace MeteorLaunching
             else
                 text.text = "Press L\nto switch projectiles";
             text.transform.localPosition = new Vector3(-150, 290, 0);
+            lateInitialized = true;
         }
 
         private GameObject LaunchMeteor()
         {
+            if (projectiles == null) return null;
+            if (projectiles.Length == 0) return null;
+            if (!lateInitialized) return null;
+            if (p >= projectiles.Length)
+                p = 0;
             GameObject newMeteor = Instantiate(projectiles[p], launcher.position + launcher.forward * .5f + launcher.forward * launchSize * projectiles[p].GetComponentInChildren<MeshRenderer>().bounds.size.x * .5f, launcher.rotation);
             /*GameObject newMeteor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newMeteor.transform.position = launcher.position + launcher.forward * launchSize * 2;
@@ -145,8 +155,15 @@ namespace MeteorLaunching
 
         private void ProjectileSwitched()
         {
+            if (projectiles == null)
+            {
+                p = 0;
+                return;
+            }
             if (p >= projectiles.Length)
                 p = 0;
+            if (projectiles.Length == 0) return;
+            if (!initialized) return;
             text.text = "Selected Projectile:\n" + projectiles[p].name;
             audio.PlayOneShot(AudioType.Menu_ChangeTab);
             timer = 100;
@@ -193,14 +210,23 @@ namespace MeteorLaunching
 
             public void AddProjectile(GameObject projectile)
             {
+                if (!Instance.initializedProjectiles)
+                {
+                    Instance.ModHelper.Console.WriteLine("Cannot add a projectile when the projectiles array is not initialized!", MessageType.Error);
+                    return;
+                }
                 List<GameObject> projectiles = Instance.projectiles.ToList();
                 projectiles.Add(projectile);
                 Instance.projectiles = projectiles.ToArray();
             }
 
+            public bool IsInitialized() => Instance.initialized;
+            public bool IsLateInitialized() => Instance.lateInitialized;
             public bool IsProjectilesInitialized() => Instance.initializedProjectiles;
 
             public int GetSelectedProjectileIndex() => Instance.p;
+
+            public GameObject LaunchProjectile() => Instance.LaunchMeteor();
 
             public void SwitchProjectile() => Instance.SwitchProjectile();
 
