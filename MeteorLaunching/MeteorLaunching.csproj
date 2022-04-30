@@ -28,6 +28,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ModTemplate.csproj.user" />
+    <Content Include="MeteorLaunching.csproj.user" />
   </ItemGroup>
 </Project>
