@@ -108,7 +108,7 @@ namespace MeteorLaunching
             if (p == 0)
                 OnMeteorLaunched(newMeteor);
             else if (p == 1)
-                OnMarshmellowLaunched(newMeteor);
+                OnMarshmallowLaunched(newMeteor);
             OnProjectileLaunched?.Invoke(p, newMeteor);
             audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
             return newMeteor;
@@ -134,11 +134,11 @@ namespace MeteorLaunching
             newMeteorContr._suspendRoot = playerBody.transform;
         }
 
-        private void OnMarshmellowLaunched(GameObject marshmellow)
+        private void OnMarshmallowLaunched(GameObject marshmallow)
         {
-            marshmellow.GetComponent<Rigidbody>().velocity = launcher.forward * (launchSpeed / 4);
-            Destroy(marshmellow.GetComponent<SelfDestruct>());
-            marshmellow.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
+            marshmallow.GetComponent<Rigidbody>().velocity = launcher.forward * (launchSpeed / 4);
+            Destroy(marshmallow.GetComponent<SelfDestruct>());
+            marshmallow.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
         }
 
         private void SwitchProjectile()
