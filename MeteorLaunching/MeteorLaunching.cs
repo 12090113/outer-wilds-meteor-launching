@@ -208,16 +208,17 @@ namespace MeteorLaunching
         {
             public GameObject[] GetProjectiles() => Instance.projectiles;
 
-            public void AddProjectile(GameObject projectile)
+            public int AddProjectile(GameObject projectile)
             {
                 if (!Instance.initializedProjectiles)
                 {
                     Instance.ModHelper.Console.WriteLine("Cannot add a projectile when the projectiles array is not initialized!", MessageType.Error);
-                    return;
+                    return -1;
                 }
                 List<GameObject> projectiles = Instance.projectiles.ToList();
                 projectiles.Add(projectile);
                 Instance.projectiles = projectiles.ToArray();
+                return projectiles.IndexOf(projectile);
             }
 
             public bool IsInitialized() => Instance.initialized;
