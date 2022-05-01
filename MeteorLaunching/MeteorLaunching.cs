@@ -164,6 +164,11 @@ namespace MeteorLaunching
                 p = 0;
             if (projectiles.Length == 0) return;
             if (!initialized) return;
+            if (projectiles.ElementAtOrDefault(p) == null)
+            {
+                p = 0;
+                return;
+            }
             text.text = "Selected Projectile:\n" + projectiles[p].name;
             audio.PlayOneShot(AudioType.Menu_ChangeTab);
             timer = 100;
