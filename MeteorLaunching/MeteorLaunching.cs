@@ -206,6 +206,14 @@ namespace MeteorLaunching
 
         public class Api
         {
+            public Transform GetLauncher() => Instance.launcher;
+
+            public float GetLaunchSpeed() => Instance.launchSpeed;
+
+            public float GetLaunchSize() => Instance.launchSize;
+
+            public SimpleFluidVolume GetSunFluid() => Instance.sunFluid;
+
             public GameObject[] GetProjectiles() => Instance.projectiles;
 
             public int AddProjectile(GameObject projectile)
