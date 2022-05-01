@@ -164,6 +164,11 @@ namespace MeteorLaunching
                 p = 0;
             if (projectiles.Length == 0) return;
             if (!initialized) return;
+            if (projectiles.ElementAtOrDefault(p) == null)
+            {
+                p = 0;
+                return;
+            }
             text.text = "Selected Projectile:\n" + projectiles[p].name;
             audio.PlayOneShot(AudioType.Menu_ChangeTab);
             timer = 100;
@@ -206,18 +211,27 @@ namespace MeteorLaunching
 
         public class Api
         {
+            public Transform GetLauncher() => Instance.launcher;
+
+            public float GetLaunchSpeed() => Instance.launchSpeed;
+
+            public float GetLaunchSize() => Instance.launchSize;
+
+            public SimpleFluidVolume GetSunFluid() => Instance.sunFluid;
+
             public GameObject[] GetProjectiles() => Instance.projectiles;
 
-            public void AddProjectile(GameObject projectile)
+            public int AddProjectile(GameObject projectile)
             {
                 if (!Instance.initializedProjectiles)
                 {
                     Instance.ModHelper.Console.WriteLine("Cannot add a projectile when the projectiles array is not initialized!", MessageType.Error);
-                    return;
+                    return -1;
                 }
                 List<GameObject> projectiles = Instance.projectiles.ToList();
                 projectiles.Add(projectile);
                 Instance.projectiles = projectiles.ToArray();
+                return projectiles.IndexOf(projectile);
             }
 
             public bool IsInitialized() => Instance.initialized;
