@@ -38,6 +38,8 @@ namespace MeteorLaunching
         public ProjectileSwitchEvent OnProjectileSwitched;
         public ProjectileLaunchEvent OnProjectileLaunched;
 
+        private Transform launcherOverride = null;
+
         private void Awake()
         {
             instance = this;
@@ -85,12 +87,13 @@ namespace MeteorLaunching
 
         private GameObject LaunchMeteor()
         {
+            var currentLauncher = launcherOverride ?? launcher;
             if (projectiles == null) return null;
             if (projectiles.Length == 0) return null;
             if (!lateInitialized) return null;
             if (p >= projectiles.Length)
                 p = 0;
-            GameObject newMeteor = Instantiate(projectiles[p], launcher.position + launcher.forward * .5f + launcher.forward * launchSize * projectiles[p].GetComponentInChildren<MeshRenderer>().bounds.size.x * .5f, launcher.rotation);
+            GameObject newMeteor = Instantiate(projectiles[p], currentLauncher.position + currentLauncher.forward * .5f + currentLauncher.forward * launchSize * projectiles[p].GetComponentInChildren<MeshRenderer>().bounds.size.x * .5f, currentLauncher.rotation);
             /*GameObject newMeteor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newMeteor.transform.position = launcher.position + launcher.forward * launchSize * 2;
             newMeteor.transform.rotation = launcher.rotation;
@@ -102,15 +105,16 @@ namespace MeteorLaunching
             var fluid = Detector.AddComponent<DynamicFluidDetector>();
             owrigid._attachedForceDetector = force;
             owrigid._attachedFluidDetector = fluid;*/
-            newMeteor.GetComponent<Rigidbody>().velocity = launcher.forward * launchSpeed;
+            newMeteor.GetComponent<Rigidbody>().velocity = currentLauncher.forward * launchSpeed;
             newMeteor.transform.localScale = new Vector3(launchSize, launchSize, launchSize);
             newMeteor.name = "Projectile";
             if (p == 0)
                 OnMeteorLaunched(newMeteor);
             else if (p == 1)
-                OnMarshmallowLaunched(newMeteor);
+                OnMarshmallowLaunched(newMeteor, currentLauncher);
             OnProjectileLaunched?.Invoke(p, newMeteor);
             audio.PlayOneShot(AudioType.BH_MeteorLaunch, 0.25f);
+            launcherOverride = null;
             return newMeteor;
         }
 
@@ -134,9 +138,9 @@ namespace MeteorLaunching
             newMeteorContr._suspendRoot = playerBody.transform;
         }
 
-        private void OnMarshmallowLaunched(GameObject marshmallow)
+        private void OnMarshmallowLaunched(GameObject marshmallow, Transform currentLauncher)
         {
-            marshmallow.GetComponent<Rigidbody>().velocity = launcher.forward * (launchSpeed / 4);
+            marshmallow.GetComponent<Rigidbody>().velocity = currentLauncher.forward * (launchSpeed / 4);
             Destroy(marshmallow.GetComponent<SelfDestruct>());
             marshmallow.GetComponentInChildren<MeshRenderer>().material.color = new Color(1, 1, 1, 0);
         }
@@ -211,7 +215,9 @@ namespace MeteorLaunching
 
         public class Api
         {
-            public Transform GetLauncher() => Instance.launcher;
+            public Transform GetLauncher() => Instance.launcherOverride ?? Instance.launcher;
+
+            public void OverrideLauncherForNextLaunch(Transform launcher) => Instance.launcherOverride = launcher;
 
             public float GetLaunchSpeed() => Instance.launchSpeed;
 
